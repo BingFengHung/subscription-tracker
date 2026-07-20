@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>SubTracker - 訂閱制與固定支出管家</title>
+  <title>SubTracker - 訂閱與生活帳單管家</title>
   
   <!-- PWA & iOS Specific Meta Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -20,7 +20,7 @@
   <header>
     <div class="logo">
       <img src="icon.svg" alt="Logo">
-      <h1>SubTracker 管家</h1>
+      <h1>SubTracker 帳單管家</h1>
     </div>
     <div style="display: flex; gap: 8px;">
       <button class="notification-btn" id="btn-notification">🔔 扣款通知</button>
@@ -32,7 +32,7 @@
     <!-- Summary Dashboard Card -->
     <div class="summary-card">
       <div class="summary-header">
-        <span class="summary-title">本月預估扣款總額</span>
+        <span class="summary-title">本月預估扣款與帳單總額</span>
         <select id="global-currency" class="currency-select">
           <option value="NT$">NT$ (TWD)</option>
           <option value="$">$ (USD)</option>
@@ -43,11 +43,11 @@
       <div class="total-amount" id="monthly-total">NT$ 0</div>
       <div class="summary-stats-grid">
         <div class="stat-box">
-          <span class="stat-label">年度預估支出</span>
+          <span class="stat-label">年度預估總支出</span>
           <span class="stat-value" id="yearly-total">NT$ 0</span>
         </div>
         <div class="stat-box">
-          <span class="stat-label">生效中訂閱數</span>
+          <span class="stat-label">生效中帳單/訂閱數</span>
           <span class="stat-value" id="active-count">0 項</span>
         </div>
       </div>
@@ -55,42 +55,46 @@
 
     <!-- Quick Add Presets Bar -->
     <div class="section-header">
-      <span class="section-title">快速新增熱門訂閱</span>
+      <span class="section-title">快速新增熱門帳單與訂閱</span>
     </div>
     <div class="presets-scroll">
-      <div class="preset-chip" data-name="Netflix" data-price="390" data-cycle="monthly" data-icon="🎬" data-category="娛樂">
-        <span class="preset-icon">🎬</span> Netflix (月繳)
+      <div class="preset-chip" data-name="中華電信 5G" data-price="599" data-cycle="monthly" data-icon="📱" data-category="電信與通訊">
+        <span class="preset-icon">📱</span> 電話費 (月繳)
       </div>
-      <div class="preset-chip" data-name="Spotify" data-price="149" data-cycle="monthly" data-icon="🎵" data-category="娛樂">
-        <span class="preset-icon">🎵</span> Spotify (月繳)
+      <div class="preset-chip" data-name="台灣電力公司" data-price="1200" data-cycle="bimonthly" data-icon="⚡" data-category="生活帳單">
+        <span class="preset-icon">⚡</span> 電費 (雙月繳)
+      </div>
+      <div class="preset-chip" data-name="台灣自來水" data-price="450" data-cycle="bimonthly" data-icon="💧" data-category="生活帳單">
+        <span class="preset-icon">💧</span> 水費 (雙月繳)
+      </div>
+      <div class="preset-chip" data-name="月租停車位" data-price="2500" data-cycle="monthly" data-icon="🚗" data-category="交通與停車">
+        <span class="preset-icon">🚗</span> 停車費 (月繳)
+      </div>
+      <div class="preset-chip" data-name="路邊停車繳費單" data-price="120" data-cycle="one-time" data-icon="🅿️" data-category="交通與停車">
+        <span class="preset-icon">🅿️</span> 單次停車費
+      </div>
+      <div class="preset-chip" data-name="信用卡應繳總額" data-price="8500" data-cycle="monthly" data-icon="💳" data-category="生活帳單">
+        <span class="preset-icon">💳</span> 信用卡費
+      </div>
+      <div class="preset-chip" data-name="Netflix" data-price="390" data-cycle="monthly" data-icon="🎬" data-category="娛樂">
+        <span class="preset-icon">🎬</span> Netflix
       </div>
       <div class="preset-chip" data-name="Disney+ 年繳" data-price="3280" data-cycle="yearly" data-icon="🏰" data-category="娛樂">
         <span class="preset-icon">🏰</span> Disney+ (年繳)
-      </div>
-      <div class="preset-chip" data-name="Nintendo Online 年繳" data-price="1080" data-cycle="yearly" data-icon="🎮" data-category="娛樂">
-        <span class="preset-icon">🎮</span> Switch (年繳)
-      </div>
-      <div class="preset-chip" data-name="ChatGPT Plus" data-price="650" data-cycle="monthly" data-icon="🤖" data-category="AI/工具">
-        <span class="preset-icon">🤖</span> ChatGPT (月繳)
-      </div>
-      <div class="preset-chip" data-name="iCloud+ 2TB 年繳" data-price="3600" data-cycle="yearly" data-icon="☁️" data-category="雲端">
-        <span class="preset-icon">☁️</span> iCloud 2TB (年繳)
-      </div>
-      <div class="preset-chip" data-name="GitHub Copilot 年繳" data-price="3200" data-cycle="yearly" data-icon="💻" data-category="開發">
-        <span class="preset-icon">💻</span> Copilot (年繳)
       </div>
     </div>
 
     <!-- Subscriptions List Section with Filter Buttons -->
     <div class="section-header">
-      <span class="section-title">我的訂閱清單</span>
-      <button class="btn-add-primary" id="btn-open-add">+ 新增訂閱</button>
+      <span class="section-title">我的帳單與訂閱清單</span>
+      <button class="btn-add-primary" id="btn-open-add">+ 新增項目</button>
     </div>
 
     <!-- Cycle Filter Pills -->
     <div class="filter-pills">
       <button class="filter-btn active" data-filter="all">全部項目</button>
-      <button class="filter-btn" data-filter="monthly">📅 月繳項目</button>
+      <button class="filter-btn" data-filter="bills">⚡ 實體/生活帳單</button>
+      <button class="filter-btn" data-filter="monthly">📅 月繳訂閱</button>
       <button class="filter-btn" data-filter="yearly">🌟 年繳項目</button>
     </div>
 
@@ -110,7 +114,7 @@
   <div class="modal-overlay" id="sub-modal">
     <div class="modal-card">
       <div class="modal-header">
-        <h2 class="modal-title" id="modal-heading">新增訂閱服務</h2>
+        <h2 class="modal-title" id="modal-heading">新增帳單 / 訂閱服務</h2>
         <button class="btn-close-modal" id="btn-close-modal">✕</button>
       </div>
 
@@ -118,39 +122,43 @@
         <input type="hidden" id="sub-id">
 
         <div class="form-group">
-          <label class="form-label">服務名稱</label>
-          <input type="text" id="sub-name" placeholder="例：Disney+ 年繳" required>
+          <label class="form-label">項目名稱</label>
+          <input type="text" id="sub-name" placeholder="例：中華電信電話費 / 停車位租金" required>
         </div>
 
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label">扣款金額</label>
-            <input type="number" id="sub-price" placeholder="3280" step="any" required>
+            <label class="form-label">金額</label>
+            <input type="number" id="sub-price" placeholder="599" step="any" required>
           </div>
           <div class="form-group">
-            <label class="form-label">扣款週期</label>
+            <label class="form-label">繳費 / 扣款週期</label>
             <select id="sub-cycle">
               <option value="monthly">每月 (Monthly)</option>
+              <option value="bimonthly">每兩月 / 雙月繳 (Bi-monthly)</option>
               <option value="yearly">每年 (Yearly)</option>
               <option value="weekly">每週 (Weekly)</option>
+              <option value="one-time">單次 / 一次性帳單 (One-off)</option>
             </select>
           </div>
         </div>
 
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label">下次扣款日期</label>
+            <label class="form-label">截止 / 扣款日期</label>
             <input type="date" id="sub-next-date" required>
           </div>
           <div class="form-group">
             <label class="form-label">類別標籤</label>
             <select id="sub-category">
+              <option value="生活帳單">⚡ 生活帳單 (水電/瓦斯)</option>
+              <option value="電信與通訊">📱 電信費 (手機/寬頻)</option>
+              <option value="交通與停車">🚗 交通與停車費</option>
               <option value="娛樂">🎬 娛樂與串流</option>
               <option value="AI/工具">🤖 AI 與生產力工具</option>
               <option value="雲端">☁️ 雲端儲存與網路</option>
-              <option value="開發">💻 軟體開發</option>
+              <option value="稅金與規費">🏛️ 稅金與規費</option>
               <option value="工作">💼 工作與商務</option>
-              <option value="生活">🏠 生活與固定開銷</option>
             </select>
           </div>
         </div>
@@ -158,22 +166,22 @@
         <div class="form-grid-2">
           <div class="form-group">
             <label class="form-label">圖示/Emoji</label>
-            <input type="text" id="sub-icon" placeholder="例：🏰" value="💳">
+            <input type="text" id="sub-icon" placeholder="例：📱" value="📄">
           </div>
           <div class="form-group">
-            <label class="form-label">付款方式 (選填)</label>
-            <input type="text" id="sub-payment" placeholder="例：玉山信用卡">
+            <label class="form-label">繳費方式 (選填)</label>
+            <input type="text" id="sub-payment" placeholder="例：超商繳費 / 信用卡自動扣繳">
           </div>
         </div>
 
         <div class="form-group">
           <label class="form-label">備註資訊 (選填)</label>
-          <input type="text" id="sub-notes" placeholder="例：每年 11 月自動續訂">
+          <input type="text" id="sub-notes" placeholder="例：電子帳單條碼 / 停車位號碼 52 號">
         </div>
 
-        <button type="submit" class="btn-submit" id="btn-submit-text">儲存訂閱項目</button>
-        <button type="button" class="btn-renew-sub" id="btn-renew-sub" style="display: none;">🔄 已完成扣款 (自動順延一週期)</button>
-        <button type="button" class="btn-delete-sub" id="btn-delete-sub" style="display: none;">🗑️ 刪除此訂閱</button>
+        <button type="submit" class="btn-submit" id="btn-submit-text">儲存項目</button>
+        <button type="button" class="btn-renew-sub" id="btn-renew-sub" style="display: none;">🔄 已完成繳費 (自動順延一週期)</button>
+        <button type="button" class="btn-delete-sub" id="btn-delete-sub" style="display: none;">🗑️ 刪除此項目</button>
       </form>
     </div>
   </div>

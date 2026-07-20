@@ -3,55 +3,66 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
       .then(reg => console.log('Service Worker registered', reg))
-      .catch(err => console.error('Service Worker registration failed', err));
+      .catch(err => console.error('Service Worker registration failed', reg));
   });
 }
 
-// Initial Default Subscriptions (Includes both Monthly and Yearly subscriptions!)
+// Default Subscriptions & Utility Bills
 const INITIAL_SUBSCRIPTIONS = [
   {
     id: "sub_1",
+    name: "中華電信 5G 電話費",
+    price: 599,
+    cycle: "monthly",
+    nextDate: getFutureDateStr(3),
+    category: "電信與通訊",
+    icon: "📱",
+    payment: "自動轉帳扣繳",
+    notes: "含行動上網吃到飽"
+  },
+  {
+    id: "sub_2",
+    name: "台灣電力公司 (電費)",
+    price: 1450,
+    cycle: "bimonthly",
+    nextDate: getFutureDateStr(14),
+    category: "生活帳單",
+    icon: "⚡",
+    payment: "超商條碼繳費",
+    notes: "雙月繳帳單"
+  },
+  {
+    id: "sub_3",
+    name: "月租停車位",
+    price: 2500,
+    cycle: "monthly",
+    nextDate: getFutureDateStr(8),
+    category: "交通與停車",
+    icon: "🚗",
+    payment: "轉帳至房東帳戶",
+    notes: "地下室 B2-52 號車位"
+  },
+  {
+    id: "sub_4",
     name: "Netflix",
     price: 390,
     cycle: "monthly",
-    nextDate: getFutureDateStr(2),
+    nextDate: getFutureDateStr(5),
     category: "娛樂",
     icon: "🎬",
     payment: "玉山信用卡",
     notes: "月繳家庭方案"
   },
   {
-    id: "sub_2",
+    id: "sub_5",
     name: "Disney+ 年繳",
     price: 3280,
     cycle: "yearly",
-    nextDate: getFutureDateStr(24),
+    nextDate: getFutureDateStr(45),
     category: "娛樂",
     icon: "🏰",
     payment: "國泰信用卡",
     notes: "年繳優惠方案"
-  },
-  {
-    id: "sub_3",
-    name: "Nintendo Switch Online",
-    price: 1080,
-    cycle: "yearly",
-    nextDate: getFutureDateStr(60),
-    category: "娛樂",
-    icon: "🎮",
-    payment: "PayPal",
-    notes: "個人年繳"
-  },
-  {
-    id: "sub_4",
-    name: "ChatGPT Plus",
-    price: 650,
-    cycle: "monthly",
-    nextDate: getFutureDateStr(1),
-    category: "AI/工具",
-    icon: "🤖",
-    payment: "國泰信用卡",
-    notes: "工作與開發用"
   }
 ];
 
@@ -64,7 +75,7 @@ function getFutureDateStr(daysAhead) {
 // State
 let subscriptions = JSON.parse(localStorage.getItem('sub_tracker_items')) || INITIAL_SUBSCRIPTIONS;
 let globalCurrency = localStorage.getItem('sub_tracker_currency') || 'NT$';
-let currentFilter = 'all';
+let currentFilter = 'all'; // 'all', 'bills', 'monthly', 'yearly'
 
 // DOM Elements
 const monthlyTotalEl = document.getElementById('monthly-total');
@@ -158,9 +169,9 @@ btnNotification.addEventListener('click', async () => {
     if (permission === 'granted') {
       checkNotificationPermission();
       triggerUpcomingNotifications(true);
-      alert('已成功開啟 iPhone 扣款提醒通知！當有扣款在 3 天內到期時，會自動彈出通知。');
+      alert('已成功開啟 iPhone 扣款與繳費提醒通知！');
     } else {
-      alert('無法開啟通知：權限已被拒絕。在 iPhone 上，需先新增至主畫面，且於設定中允許 Safar/PWA 通知。');
+      alert('無法開啟通知：權限已被拒絕。在 iPhone 上，需先新增至主畫面，且於設定中允許 Safari/PWA 通知。');
     }
   }
 });
@@ -168,7 +179,6 @@ btnNotification.addEventListener('click', async () => {
 function triggerUpcomingNotifications(forceTest = false) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
-  // Find subscriptions due within 3 days
   const urgentItems = subscriptions.filter(sub => {
     const days = getDaysRemaining(sub.nextDate);
     return days >= 0 && days <= 3;
@@ -177,11 +187,11 @@ function triggerUpcomingNotifications(forceTest = false) {
   if (urgentItems.length > 0) {
     urgentItems.forEach(sub => {
       const days = getDaysRemaining(sub.nextDate);
-      const dayText = days === 0 ? '今日' : `${days} 天後`;
+      const dayText = days === 0 ? '今日截止' : `${days} 天後到期`;
       
-      const title = `🔔 扣款提醒：${sub.name}`;
+      const title = `🔔 繳費/扣款提醒：${sub.name}`;
       const options = {
-        body: `${sub.name} 將於 ${dayText} (${sub.nextDate}) 扣款 ${globalCurrency} ${sub.price}！`,
+        body: `${sub.name} 將於 ${dayText} (${sub.nextDate}) 扣繳 ${globalCurrency} ${sub.price}！`,
         icon: './icon.svg',
         badge: './icon.svg',
         tag: `sub-due-${sub.id}-${sub.nextDate}`
@@ -196,9 +206,9 @@ function triggerUpcomingNotifications(forceTest = false) {
       }
     });
   } else if (forceTest) {
-    const title = '🔔 SubTracker 扣款通知功能正常';
+    const title = '🔔 SubTracker 繳費通知功能正常';
     const options = {
-      body: '目前沒有即將到期的扣款項目。當有訂閱將於 3 天內到期時，系統會自動跳出通知提醒您！',
+      body: '目前沒有即將到期的帳單或訂閱。當有帳單將於 3 天內到期時，系統會自動跳出通知提醒您！',
       icon: './icon.svg'
     };
     if ('serviceWorker' in navigator) {
@@ -252,12 +262,22 @@ function render() {
     if (sub.cycle === 'monthly') {
       monthlyTotal += price;
       yearlyTotal += price * 12;
+    } else if (sub.cycle === 'bimonthly') {
+      monthlyTotal += price / 2; // Bi-monthly (every 2 months)
+      yearlyTotal += price * 6;
     } else if (sub.cycle === 'yearly') {
       monthlyTotal += price / 12;
       yearlyTotal += price;
     } else if (sub.cycle === 'weekly') {
       monthlyTotal += price * 4.33;
       yearlyTotal += price * 52;
+    } else if (sub.cycle === 'one-time') {
+      // One time bills due this month count to monthly total
+      const days = getDaysRemaining(sub.nextDate);
+      if (days >= 0 && days <= 30) {
+        monthlyTotal += price;
+      }
+      yearlyTotal += price;
     }
   });
   
@@ -266,6 +286,9 @@ function render() {
   activeCountEl.textContent = `${subscriptions.length} 項`;
   
   const filteredSubs = subscriptions.filter(sub => {
+    if (currentFilter === 'bills') {
+      return ['生活帳單', '電信與通訊', '交通與停車', '稅金與規費'].includes(sub.category) || sub.cycle === 'bimonthly' || sub.cycle === 'one-time';
+    }
     if (currentFilter === 'monthly') return sub.cycle === 'monthly';
     if (currentFilter === 'yearly') return sub.cycle === 'yearly';
     return true;
@@ -277,8 +300,8 @@ function render() {
     subListContainer.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">💳</div>
-        <p>此分類下無任何訂閱項目</p>
-        <p style="font-size: 0.8rem;">點擊右上角「+ 新增訂閱」來新增開銷。</p>
+        <p>此分類下無任何帳單或訂閱項目</p>
+        <p style="font-size: 0.8rem;">點擊右上角「+ 新增項目」來記錄開銷。</p>
       </div>
     `;
     return;
@@ -289,15 +312,15 @@ function render() {
     let badgeHtml = '';
     
     if (days < 0) {
-      badgeHtml = `<span class="due-badge urgent">已過期 (${Math.abs(days)}天前)</span>`;
+      badgeHtml = `<span class="due-badge urgent">已到期/逾期 (${Math.abs(days)}天前)</span>`;
     } else if (days === 0) {
-      badgeHtml = `<span class="due-badge urgent">🚨 今日扣款</span>`;
+      badgeHtml = `<span class="due-badge urgent">🚨 今日截止</span>`;
     } else if (days <= 3) {
-      badgeHtml = `<span class="due-badge urgent">⚠️ ${days}天後扣款</span>`;
+      badgeHtml = `<span class="due-badge urgent">⚠️ ${days}天後截止</span>`;
     } else if (days <= 7) {
-      badgeHtml = `<span class="due-badge soon">下週扣款 (${days}天)</span>`;
+      badgeHtml = `<span class="due-badge soon">下週到期 (${days}天)</span>`;
     } else {
-      badgeHtml = `<span class="due-badge normal">${days}天後扣款</span>`;
+      badgeHtml = `<span class="due-badge normal">${days}天後到期</span>`;
     }
     
     let cycleTagHtml = '';
@@ -307,14 +330,24 @@ function render() {
       cycleTagHtml = `<span class="cycle-tag yearly">🌟 年繳</span>`;
       const monthlyEquiv = Math.round((parseFloat(sub.price) || 0) / 12);
       equivMonthlyHtml = `<span class="sub-equiv-monthly">(約 ${globalCurrency} ${monthlyEquiv}/月)</span>`;
+    } else if (sub.cycle === 'bimonthly') {
+      cycleTagHtml = `<span class="cycle-tag yearly" style="background:rgba(0,242,254,0.2); color:#00f2fe; border-color:rgba(0,242,254,0.4);">⚡ 雙月繳</span>`;
+      const monthlyEquiv = Math.round((parseFloat(sub.price) || 0) / 2);
+      equivMonthlyHtml = `<span class="sub-equiv-monthly">(約 ${globalCurrency} ${monthlyEquiv}/月)</span>`;
+    } else if (sub.cycle === 'one-time') {
+      cycleTagHtml = `<span class="cycle-tag yearly" style="background:rgba(255,159,67,0.2); color:#ff9f43; border-color:rgba(255,159,67,0.4);">📌 單次帳單</span>`;
     }
     
-    const cycleText = sub.cycle === 'monthly' ? '/月' : sub.cycle === 'yearly' ? '/年' : '/週';
+    let cycleText = '/月';
+    if (sub.cycle === 'yearly') cycleText = '/年';
+    else if (sub.cycle === 'bimonthly') cycleText = '/兩月';
+    else if (sub.cycle === 'weekly') cycleText = '/週';
+    else if (sub.cycle === 'one-time') cycleText = ' (單次)';
     
     const item = document.createElement('div');
     item.className = `sub-item ${sub.cycle === 'yearly' ? 'yearly-card' : ''}`;
     item.innerHTML = `
-      <div class="sub-logo">${sub.icon || '💳'}</div>
+      <div class="sub-logo">${sub.icon || '📄'}</div>
       <div class="sub-details">
         <div class="sub-name-row">
           <span class="sub-name">${sub.name}</span>
@@ -322,7 +355,7 @@ function render() {
           ${badgeHtml}
         </div>
         <div class="sub-meta">
-          下期扣款日：${sub.nextDate} ${sub.payment ? '• ' + sub.payment : ''}
+          繳費日：${sub.nextDate} ${sub.payment ? '• ' + sub.payment : ''}
         </div>
       </div>
       <div class="sub-price-col">
@@ -344,26 +377,32 @@ currencySelect.addEventListener('change', (e) => {
 
 document.querySelectorAll('.preset-chip').forEach(chip => {
   chip.addEventListener('click', () => {
+    const cycle = chip.dataset.cycle || 'monthly';
+    let defaultDays = 30;
+    if (cycle === 'yearly') defaultDays = 365;
+    if (cycle === 'bimonthly') defaultDays = 60;
+    if (cycle === 'one-time') defaultDays = 14;
+
     openAddModal({
       name: chip.dataset.name,
       price: chip.dataset.price,
-      cycle: chip.dataset.cycle || 'monthly',
+      cycle: cycle,
       icon: chip.dataset.icon,
       category: chip.dataset.category,
-      nextDate: getFutureDateStr(chip.dataset.cycle === 'yearly' ? 365 : 30)
+      nextDate: getFutureDateStr(defaultDays)
     });
   });
 });
 
 function openAddModal(defaultValues = {}) {
-  modalHeading.textContent = '新增訂閱服務';
+  modalHeading.textContent = '新增帳單 / 訂閱';
   subIdInput.value = '';
   subNameInput.value = defaultValues.name || '';
   subPriceInput.value = defaultValues.price || '';
   subCycleInput.value = defaultValues.cycle || 'monthly';
   subNextDateInput.value = defaultValues.nextDate || getFutureDateStr(30);
-  subCategoryInput.value = defaultValues.category || '娛樂';
-  subIconInput.value = defaultValues.icon || '💳';
+  subCategoryInput.value = defaultValues.category || '生活帳單';
+  subIconInput.value = defaultValues.icon || '📄';
   subPaymentInput.value = defaultValues.payment || '';
   subNotesInput.value = defaultValues.notes || '';
   
@@ -373,18 +412,27 @@ function openAddModal(defaultValues = {}) {
 }
 
 function openEditModal(sub) {
-  modalHeading.textContent = '編輯訂閱服務';
+  modalHeading.textContent = '編輯帳單 / 訂閱';
   subIdInput.value = sub.id;
   subNameInput.value = sub.name;
   subPriceInput.value = sub.price;
   subCycleInput.value = sub.cycle;
   subNextDateInput.value = sub.nextDate;
-  subCategoryInput.value = sub.category || '娛樂';
-  subIconInput.value = sub.icon || '💳';
+  subCategoryInput.value = sub.category || '生活帳單';
+  subIconInput.value = sub.icon || '📄';
   subPaymentInput.value = sub.payment || '';
   subNotesInput.value = sub.notes || '';
   
-  btnRenewSub.textContent = sub.cycle === 'yearly' ? '🔄 完成扣款 (續訂一年)' : '🔄 完成扣款 (續訂一月)';
+  if (sub.cycle === 'yearly') {
+    btnRenewSub.textContent = '🔄 完成繳費 (順延一年)';
+  } else if (sub.cycle === 'bimonthly') {
+    btnRenewSub.textContent = '🔄 完成繳費 (順延兩個月)';
+  } else if (sub.cycle === 'one-time') {
+    btnRenewSub.textContent = '✅ 標記已完成繳納 (從清單移除)';
+  } else {
+    btnRenewSub.textContent = '🔄 完成繳費 (順延一個月)';
+  }
+  
   btnRenewSub.style.display = 'block';
   btnDeleteSub.style.display = 'block';
   subModal.style.display = 'flex';
@@ -403,10 +451,21 @@ btnRenewSub.addEventListener('click', () => {
   const idx = subscriptions.findIndex(s => s.id === id);
   if (idx !== -1) {
     const currentSub = subscriptions[idx];
+    
+    if (currentSub.cycle === 'one-time') {
+      subscriptions.splice(idx, 1);
+      saveState();
+      closeModal();
+      alert(`已將單次帳單「${currentSub.name}」標記為已繳納！`);
+      return;
+    }
+
     const currentDate = new Date(currentSub.nextDate || new Date());
     
     if (currentSub.cycle === 'yearly') {
       currentDate.setFullYear(currentDate.getFullYear() + 1);
+    } else if (currentSub.cycle === 'bimonthly') {
+      currentDate.setMonth(currentDate.getMonth() + 2);
     } else if (currentSub.cycle === 'weekly') {
       currentDate.setDate(currentDate.getDate() + 7);
     } else {
@@ -416,7 +475,7 @@ btnRenewSub.addEventListener('click', () => {
     currentSub.nextDate = currentDate.toISOString().split('T')[0];
     saveState();
     closeModal();
-    alert(`已順延「${currentSub.name}」扣款日期至：${currentSub.nextDate}`);
+    alert(`已完成繳費！「${currentSub.name}」下期繳費日期已順延至：${currentSub.nextDate}`);
   }
 });
 
@@ -431,7 +490,7 @@ subForm.addEventListener('submit', (e) => {
     cycle: subCycleInput.value,
     nextDate: subNextDateInput.value,
     category: subCategoryInput.value,
-    icon: subIconInput.value.trim() || '💳',
+    icon: subIconInput.value.trim() || '📄',
     payment: subPaymentInput.value.trim(),
     notes: subNotesInput.value.trim()
   };
@@ -450,7 +509,7 @@ subForm.addEventListener('submit', (e) => {
 btnDeleteSub.addEventListener('click', () => {
   const id = subIdInput.value;
   if (!id) return;
-  if (confirm('確定要刪除這個訂閱項目嗎？')) {
+  if (confirm('確定要刪除這個帳單/訂閱項目嗎？')) {
     subscriptions = subscriptions.filter(s => s.id !== id);
     saveState();
     closeModal();
@@ -479,7 +538,7 @@ importFileInput.addEventListener('change', (e) => {
       if (Array.isArray(importedData)) {
         subscriptions = importedData;
         saveState();
-        alert('匯入成功！已還原您的訂閱清單。');
+        alert('匯入成功！已還原您的帳單與訂閱清單。');
       } else {
         alert('匯入失敗：格式不正確。');
       }
