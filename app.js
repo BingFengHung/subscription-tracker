@@ -14,7 +14,7 @@ const INITIAL_SUBSCRIPTIONS = [
     name: "Netflix",
     price: 390,
     cycle: "monthly",
-    nextDate: getFutureDateStr(5),
+    nextDate: getFutureDateStr(2),
     category: "娛樂",
     icon: "🎬",
     payment: "玉山信用卡",
@@ -47,7 +47,7 @@ const INITIAL_SUBSCRIPTIONS = [
     name: "ChatGPT Plus",
     price: 650,
     cycle: "monthly",
-    nextDate: getFutureDateStr(2),
+    nextDate: getFutureDateStr(1),
     category: "AI/工具",
     icon: "🤖",
     payment: "國泰信用卡",
@@ -64,7 +64,7 @@ function getFutureDateStr(daysAhead) {
 // State
 let subscriptions = JSON.parse(localStorage.getItem('sub_tracker_items')) || INITIAL_SUBSCRIPTIONS;
 let globalCurrency = localStorage.getItem('sub_tracker_currency') || 'NT$';
-let currentFilter = 'all'; // 'all', 'monthly', 'yearly'
+let currentFilter = 'all';
 
 // DOM Elements
 const monthlyTotalEl = document.getElementById('monthly-total');
@@ -73,6 +73,7 @@ const activeCountEl = document.getElementById('active-count');
 const currencySelect = document.getElementById('global-currency');
 const subListContainer = document.getElementById('sub-list-container');
 const filterBtns = document.querySelectorAll('.filter-btn');
+const btnNotification = document.getElementById('btn-notification');
 
 // Modal Elements
 const subModal = document.getElementById('sub-modal');
@@ -129,11 +130,91 @@ installBtn.addEventListener('click', () => {
 
 modalClose.addEventListener('click', () => pwaModal.style.display = 'none');
 
+// Web Notification API (iOS 16.4+ PWA Supported)
+function checkNotificationPermission() {
+  if (!('Notification' in window)) {
+    btnNotification.style.display = 'none';
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    btnNotification.textContent = '🔔 通知已啟用';
+    btnNotification.classList.add('active');
+  } else {
+    btnNotification.textContent = '🔔 啟用扣款通知';
+    btnNotification.classList.remove('active');
+  }
+}
+
+btnNotification.addEventListener('click', async () => {
+  if (!('Notification' in window)) {
+    alert('您的瀏覽器或設備暫不支援網頁通知。若在 iPhone 上，請先將此 App「加入主畫面」後開啟。');
+    return;
+  }
+  
+  if (Notification.permission === 'granted') {
+    triggerUpcomingNotifications(true);
+  } else {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      checkNotificationPermission();
+      triggerUpcomingNotifications(true);
+      alert('已成功開啟 iPhone 扣款提醒通知！當有扣款在 3 天內到期時，會自動彈出通知。');
+    } else {
+      alert('無法開啟通知：權限已被拒絕。在 iPhone 上，需先新增至主畫面，且於設定中允許 Safar/PWA 通知。');
+    }
+  }
+});
+
+function triggerUpcomingNotifications(forceTest = false) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  // Find subscriptions due within 3 days
+  const urgentItems = subscriptions.filter(sub => {
+    const days = getDaysRemaining(sub.nextDate);
+    return days >= 0 && days <= 3;
+  });
+
+  if (urgentItems.length > 0) {
+    urgentItems.forEach(sub => {
+      const days = getDaysRemaining(sub.nextDate);
+      const dayText = days === 0 ? '今日' : `${days} 天後`;
+      
+      const title = `🔔 扣款提醒：${sub.name}`;
+      const options = {
+        body: `${sub.name} 將於 ${dayText} (${sub.nextDate}) 扣款 ${globalCurrency} ${sub.price}！`,
+        icon: './icon.svg',
+        badge: './icon.svg',
+        tag: `sub-due-${sub.id}-${sub.nextDate}`
+      };
+      
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(reg => {
+          reg.showNotification(title, options);
+        });
+      } else {
+        new Notification(title, options);
+      }
+    });
+  } else if (forceTest) {
+    const title = '🔔 SubTracker 扣款通知功能正常';
+    const options = {
+      body: '目前沒有即將到期的扣款項目。當有訂閱將於 3 天內到期時，系統會自動跳出通知提醒您！',
+      icon: './icon.svg'
+    };
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(reg => reg.showNotification(title, options));
+    } else {
+      new Notification(title, options);
+    }
+  }
+}
+
 // Save State
 function saveState() {
   localStorage.setItem('sub_tracker_items', JSON.stringify(subscriptions));
   localStorage.setItem('sub_tracker_currency', globalCurrency);
   render();
+  triggerUpcomingNotifications(false);
 }
 
 // Calculate days remaining
@@ -160,7 +241,7 @@ filterBtns.forEach(btn => {
 function render() {
   currencySelect.value = globalCurrency;
   
-  // Sort by next billing date (nearest first)
+  // Sort by next billing date
   subscriptions.sort((a, b) => new Date(a.nextDate) - new Date(b.nextDate));
   
   let monthlyTotal = 0;
@@ -172,7 +253,7 @@ function render() {
       monthlyTotal += price;
       yearlyTotal += price * 12;
     } else if (sub.cycle === 'yearly') {
-      monthlyTotal += price / 12; // Normalize annual to monthly
+      monthlyTotal += price / 12;
       yearlyTotal += price;
     } else if (sub.cycle === 'weekly') {
       monthlyTotal += price * 4.33;
@@ -184,14 +265,12 @@ function render() {
   yearlyTotalEl.textContent = `${globalCurrency} ${Math.round(yearlyTotal).toLocaleString()}`;
   activeCountEl.textContent = `${subscriptions.length} 項`;
   
-  // Filter list
   const filteredSubs = subscriptions.filter(sub => {
     if (currentFilter === 'monthly') return sub.cycle === 'monthly';
     if (currentFilter === 'yearly') return sub.cycle === 'yearly';
     return true;
   });
   
-  // Render List
   subListContainer.innerHTML = '';
   
   if (filteredSubs.length === 0) {
@@ -221,7 +300,6 @@ function render() {
       badgeHtml = `<span class="due-badge normal">${days}天後扣款</span>`;
     }
     
-    // Cycle tag & Equivalent monthly price for yearly items
     let cycleTagHtml = '';
     let equivMonthlyHtml = '';
     
@@ -259,13 +337,11 @@ function render() {
   });
 }
 
-// Currency Selector Event
 currencySelect.addEventListener('change', (e) => {
   globalCurrency = e.target.value;
   saveState();
 });
 
-// Preset Quick Chips Click
 document.querySelectorAll('.preset-chip').forEach(chip => {
   chip.addEventListener('click', () => {
     openAddModal({
@@ -279,7 +355,6 @@ document.querySelectorAll('.preset-chip').forEach(chip => {
   });
 });
 
-// Modal Open/Close Logic
 function openAddModal(defaultValues = {}) {
   modalHeading.textContent = '新增訂閱服務';
   subIdInput.value = '';
@@ -322,7 +397,6 @@ function closeModal() {
 btnOpenAdd.addEventListener('click', () => openAddModal());
 btnCloseModal.addEventListener('click', closeModal);
 
-// Quick Renew button logic (adds 1 cycle to nextDate)
 btnRenewSub.addEventListener('click', () => {
   const id = subIdInput.value;
   if (!id) return;
@@ -346,7 +420,6 @@ btnRenewSub.addEventListener('click', () => {
   }
 });
 
-// Form Submit
 subForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const id = subIdInput.value;
@@ -374,7 +447,6 @@ subForm.addEventListener('submit', (e) => {
   closeModal();
 });
 
-// Delete Sub
 btnDeleteSub.addEventListener('click', () => {
   const id = subIdInput.value;
   if (!id) return;
@@ -385,7 +457,6 @@ btnDeleteSub.addEventListener('click', () => {
   }
 });
 
-// Export JSON Backup
 btnExport.addEventListener('click', () => {
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(subscriptions, null, 2));
   const downloadAnchor = document.createElement('a');
@@ -396,7 +467,6 @@ btnExport.addEventListener('click', () => {
   downloadAnchor.remove();
 });
 
-// Import JSON Backup
 btnImport.addEventListener('click', () => importFileInput.click());
 importFileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
@@ -421,4 +491,8 @@ importFileInput.addEventListener('change', (e) => {
 });
 
 // Initial Render
-window.addEventListener('load', render);
+window.addEventListener('load', () => {
+  render();
+  checkNotificationPermission();
+  triggerUpcomingNotifications(false);
+});
