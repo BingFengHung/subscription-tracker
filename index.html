@@ -55,30 +55,40 @@
       <span class="section-title">快速新增熱門訂閱</span>
     </div>
     <div class="presets-scroll">
-      <div class="preset-chip" data-name="Netflix" data-price="390" data-icon="🎬" data-category="娛樂">
-        <span class="preset-icon">🎬</span> Netflix
+      <div class="preset-chip" data-name="Netflix" data-price="390" data-cycle="monthly" data-icon="🎬" data-category="娛樂">
+        <span class="preset-icon">🎬</span> Netflix (月繳)
       </div>
-      <div class="preset-chip" data-name="Spotify" data-price="149" data-icon="🎵" data-category="娛樂">
-        <span class="preset-icon">🎵</span> Spotify
+      <div class="preset-chip" data-name="Spotify" data-price="149" data-cycle="monthly" data-icon="🎵" data-category="娛樂">
+        <span class="preset-icon">🎵</span> Spotify (月繳)
       </div>
-      <div class="preset-chip" data-name="ChatGPT Plus" data-price="650" data-icon="🤖" data-category="AI/工具">
-        <span class="preset-icon">🤖</span> ChatGPT Plus
+      <div class="preset-chip" data-name="Disney+ 年繳" data-price="3280" data-cycle="yearly" data-icon="🏰" data-category="娛樂">
+        <span class="preset-icon">🏰</span> Disney+ (年繳)
       </div>
-      <div class="preset-chip" data-name="iCloud+ (200GB)" data-price="90" data-icon="☁️" data-category="雲端">
-        <span class="preset-icon">☁️</span> iCloud+
+      <div class="preset-chip" data-name="Nintendo Online 年繳" data-price="1080" data-cycle="yearly" data-icon="🎮" data-category="娛樂">
+        <span class="preset-icon">🎮</span> Switch (年繳)
       </div>
-      <div class="preset-chip" data-name="YouTube Premium" data-price="199" data-icon="▶️" data-category="娛樂">
-        <span class="preset-icon">▶️</span> YouTube
+      <div class="preset-chip" data-name="ChatGPT Plus" data-price="650" data-cycle="monthly" data-icon="🤖" data-category="AI/工具">
+        <span class="preset-icon">🤖</span> ChatGPT (月繳)
       </div>
-      <div class="preset-chip" data-name="GitHub Copilot" data-price="320" data-icon="💻" data-category="開發">
-        <span class="preset-icon">💻</span> Copilot
+      <div class="preset-chip" data-name="iCloud+ 2TB 年繳" data-price="3600" data-cycle="yearly" data-icon="☁️" data-category="雲端">
+        <span class="preset-icon">☁️</span> iCloud 2TB (年繳)
+      </div>
+      <div class="preset-chip" data-name="GitHub Copilot 年繳" data-price="3200" data-cycle="yearly" data-icon="💻" data-category="開發">
+        <span class="preset-icon">💻</span> Copilot (年繳)
       </div>
     </div>
 
-    <!-- Subscriptions List Section -->
+    <!-- Subscriptions List Section with Filter Buttons -->
     <div class="section-header">
       <span class="section-title">我的訂閱清單</span>
       <button class="btn-add-primary" id="btn-open-add">+ 新增訂閱</button>
+    </div>
+
+    <!-- Cycle Filter Pills -->
+    <div class="filter-pills">
+      <button class="filter-btn active" data-filter="all">全部項目</button>
+      <button class="filter-btn" data-filter="monthly">📅 月繳項目</button>
+      <button class="filter-btn" data-filter="yearly">🌟 年繳項目</button>
     </div>
 
     <div class="sub-list" id="sub-list-container">
@@ -106,13 +116,13 @@
 
         <div class="form-group">
           <label class="form-label">服務名稱</label>
-          <input type="text" id="sub-name" placeholder="例：Netflix" required>
+          <input type="text" id="sub-name" placeholder="例：Disney+ 年繳" required>
         </div>
 
         <div class="form-grid-2">
           <div class="form-group">
             <label class="form-label">扣款金額</label>
-            <input type="number" id="sub-price" placeholder="390" step="any" required>
+            <input type="number" id="sub-price" placeholder="3280" step="any" required>
           </div>
           <div class="form-group">
             <label class="form-label">扣款週期</label>
@@ -145,7 +155,7 @@
         <div class="form-grid-2">
           <div class="form-group">
             <label class="form-label">圖示/Emoji</label>
-            <input type="text" id="sub-icon" placeholder="例：🎬" value="💳">
+            <input type="text" id="sub-icon" placeholder="例：🏰" value="💳">
           </div>
           <div class="form-group">
             <label class="form-label">付款方式 (選填)</label>
@@ -155,10 +165,11 @@
 
         <div class="form-group">
           <label class="form-label">備註資訊 (選填)</label>
-          <input type="text" id="sub-notes" placeholder="例：與家庭成員共享">
+          <input type="text" id="sub-notes" placeholder="例：每年 11 月自動續訂">
         </div>
 
         <button type="submit" class="btn-submit" id="btn-submit-text">儲存訂閱項目</button>
+        <button type="button" class="btn-renew-sub" id="btn-renew-sub" style="display: none;">🔄 已完成扣款 (自動順延一週期)</button>
         <button type="button" class="btn-delete-sub" id="btn-delete-sub" style="display: none;">🗑️ 刪除此訂閱</button>
       </form>
     </div>
